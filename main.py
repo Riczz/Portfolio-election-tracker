@@ -13,7 +13,7 @@ MENU_CYCLE_INTERVAL = 10.0
 COUNTY_CYCLE_INTERVAL = 7.5
 REFRESH_INTERVAL = 70.0
 
-EXT_PATH = r'D:\PycharmProjects\Portfolio\3.12_0'
+EXT_PATH = r'C:\Users\csino\OneDrive\Asztali gép\Portfolio\3.12_0'
 
 
 class MainThread(Thread):
@@ -56,28 +56,35 @@ class MainThread(Thread):
             time.sleep(COUNTY_CYCLE_INTERVAL)
         driver.execute_script('hideCounty()')
 
-    def reset(self):
+    async def reset(self):
         self._get_menu_items()
         self.index = 0
 
 
-def onRefresh():
+async def onRefresh():
     driver.refresh()
     driver.execute_script("window.scrollTo(0, 475)")
     driver.fullscreen_window()
     driver.find_element(By.CSS_SELECTOR, 'div.el-menu>div.el-menu-item[data-index="1"]').click()
+
+    try:
+        sticky = driver.find_element(By.CSS_SELECTOR, 'div.sticky-news')
+        driver.execute_script('arguments[0].parentNode.removeChild(arguments[0])', sticky)
+    except selenium.common.exceptions.NoSuchElementException as e:
+        pass
+
     driver.execute_script('arguments[0].parentNode.removeChild(arguments[0])',
                           driver.find_element(By.CSS_SELECTOR, 'div.mf_inner'))
 
 
 async def refreshPage():
     await asyncio.sleep(REFRESH_INTERVAL)
-    onRefresh()
+    await onRefresh()
+    await MAIN_THREAD.reset()
 
 
 async def mainLoop():
     task = asyncio.create_task(refreshPage())
-    task.add_done_callback(lambda result: MAIN_THREAD.reset())
     await task
     await mainLoop()
 
@@ -89,11 +96,11 @@ if __name__ == "__main__":
     driver = webdriver.Chrome(options=chrome_options)
     driver.create_options()
 
-    driver.implicitly_wait(10)
+    driver.implicitly_wait(0)
     driver.get('https://www.portfolio.hu/valasztas')
 
     time.sleep(10)
-    onRefresh()
+    asyncio.run(onRefresh())
 
     MAIN_THREAD = MainThread()
     MAIN_THREAD.start()
