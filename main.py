@@ -9,13 +9,17 @@ from threading import Thread
 
 
 MAIN_THREAD = None
-CYCLE_INTERVAL = 10.0
-REFRESH_INTERVAL = 80.0
+MENU_CYCLE_INTERVAL = 10.0
+COUNTY_CYCLE_INTERVAL = 7.5
+REFRESH_INTERVAL = 70.0
 
 EXT_PATH = r'D:\PycharmProjects\Portfolio\3.12_0'
 
 
 class MainThread(Thread):
+
+    COUNTIES = ['06-01', '06-02', '06-03', '06-04']
+
     def __init__(self):
         Thread.__init__(self)
         self._get_menu_items()
@@ -36,12 +40,21 @@ class MainThread(Thread):
         while True:
             try:
                 self.menu_items[self.index].click()
-                if self.index == 3:
+                if self.index == 0:
+                    self.cycleCounties()
+                elif self.index == 3:
                     driver.find_elements(By.CSS_SELECTOR, 'span.hasResult[data-time]')[::-1][0].click()
             except selenium.common.exceptions.StaleElementReferenceException:
-                pass
+                continue
+
             self.index += 1
-            time.sleep(CYCLE_INTERVAL)
+            time.sleep(MENU_CYCLE_INTERVAL)
+
+    def cycleCounties(self):
+        for area in self.COUNTIES:
+            driver.execute_script(f"showCounty('{area}')")
+            time.sleep(COUNTY_CYCLE_INTERVAL)
+        driver.execute_script('hideCounty()')
 
     def reset(self):
         self._get_menu_items()
